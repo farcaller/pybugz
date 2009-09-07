@@ -11,6 +11,7 @@ import textwrap
 from optparse import OptionParser
 from optparse import make_option
 from urlparse import urljoin
+from ConfigParser import ConfigParser
 
 try:
 	import readline
@@ -137,7 +138,7 @@ def modify_opt_invalid(opt, opt_str, val, parser):
 class PrettyBugz(Bugz):
 	options = {
 		'base': make_option('-b', '--base', type='string',
-							default = 'https://bugs.gentoo.org/',
+							default = None,
 							help = 'Base URL of Bugzilla'),
 		'user': make_option('-u', '--user', type='string',
 							help = 'Username for commands requiring authentication'),
@@ -159,13 +160,24 @@ class PrettyBugz(Bugz):
 							default = False, help = 'Quiet mode'),
 	}
 
-	def __init__(self, base, user = None, password =None, forget = False,
+	def __init__(self, base, user = None, password = None, forget = False,
 			columns = 0, encoding = '', skip_auth = False,
 			quiet = False, httpuser = None, httppassword = None ):
 
 		self.quiet = quiet
 		self.columns = columns or terminal_width()
-
+		
+		cp = ConfigParser()
+		cp.read(os.path.expanduser('~/.pybugz'))
+		defrepo = cp.get('Settings', 'default')
+		
+		if not base:
+		    base = cp.get(defrepo, 'url')
+		
+		if not user:
+			user = cp.get(defrepo, 'user')
+			password = cp.get(defrepo, 'password')
+		
 		Bugz.__init__(self, base, user, password, forget, skip_auth, httpuser, httppassword)
 
 		self.log("Using %s " % self.base)
